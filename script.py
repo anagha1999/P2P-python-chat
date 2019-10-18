@@ -13,6 +13,7 @@ class Server:
     #??how are connections different from peers??
     def __init__(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) #allows a socket to be resued after a certain timeout interval(1s)
         IP = "127.0.0.1" #can and should be changed later on
         port = 10000
         sock.bind((IP, port))
@@ -65,6 +66,8 @@ class Client:
 
     def __init__(self, address):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) #allows a socket to be resued after a certain timeout interval(1s)
+
         sock.connect((address, 10000))
 
         iThread = threading.Thread(target = self.sendMsg, args = (sock,))
@@ -76,17 +79,47 @@ class Client:
             if not data:
                 break
             if data[0:1] == b'\x11':
-                print("got peers")
+                #print("got peers")
+                self.updatePeers(data[1:])
             else:
                 print(str(data, "uft-8"))
 
-if(len(sys.argv)>1):
+    def updatePeers(self, peerData):
+        p2p.peers = str(peerData, "utf-8").split(',')[:-1]
+
+class p2p:
+    peers = ['127.0.0.1']
+
+
+'''if(len(sys.argv)>1):
     client = Client(sys.argv[1])
 
 else:
-    server = Server()
+    server = Server()'''
 
 
-#while True:
-    #print("Trying to connect...")
-    #time.sleep(randint(1, 5))
+while True:
+    try:
+        print("Trying to connect...")
+        time.sleep(randint(1, 5))
+        for peer in p2p.peers:
+            try:
+                client = Client(peer)
+            except KeyboardInterrupt:
+                sys.exit(0)
+            except:
+                pass
+
+            try:
+                server = Server()
+            except KeyboardInterrupt:
+                sys.exit(0)
+            except:
+                print("Couldn't start server...")
+
+
+
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+
